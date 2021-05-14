@@ -15,7 +15,7 @@
 
 2. 아키텍처
 
-   ![image-20210514211145498](README.assets/image-20210514211145498.png)
+   ![image-20210514211145498](./README.assets/image-20210514211145498.png)
 
 
 
