@@ -64,7 +64,7 @@ def stream(pb_path, node_dict,ref_dir,camera_source=0,resolution="480",to_write=
     id2class = {0: 'Mask', 1: 'NoMask'}
     batch_size = 32
     ## 작게 할수록 높은 정밀도를 요구하지만 잘 안됨
-    threshold = 1.5
+    threshold = 1.3
 
     #----Video streaming initialization
     cap,height,width,writer = video_init(camera_source=camera_source, resolution=resolution, to_write=to_write, save_dir=save_dir)
