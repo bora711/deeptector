@@ -147,9 +147,11 @@ def stream(pb_path, node_dict,ref_dir,camera_source=0,resolution="480",to_write=
         if ret is True:
 
             #----image processing
+            img = cv2.flip(img, 1)    # 좌우 대칭
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             img_rgb = img_rgb.astype(np.float32)
             img_rgb /= 255
+            img_rgb = cv2.flip(img_rgb, 1)
 
             #----face detection
             #print(img_rgb.shape)
