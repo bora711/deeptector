@@ -24,6 +24,7 @@
 - `deeptector/face-mask-detector` 에서 프로젝트 수행
 - `CommitMessage_Rule.md` 파일을 읽고 commit 해주세요
 - `Notion` 에서 작업공유
+- 시연영상 : https://youtu.be/peRxCWrm8Mg
 - `branch`
   - master : 검증된 프로젝트 (develop에서 검증되면 merge)
   - develop : 각자 개발한 프로젝트 commit
