@@ -339,9 +339,9 @@ def img_alignment(root_dir,output_dir,margin=44,GPU_ratio=0.1,img_show=False,dat
 
 if __name__ == "__main__":
     #----alignment
-    root_dir = r".\celebrity"
-    output_dir = r".\celebrity_ali"
-    margin = 40
+    root_dir = r"D:\lfw\ori"
+    output_dir = r"D:\lfw\aligned(False)"
+    margin = 20
     GPU_ratio = None
     img_show = False
     dataset_range = None

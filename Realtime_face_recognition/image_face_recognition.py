@@ -1,10 +1,10 @@
 import cv2, os, time, math
 import numpy as np
+from numpy import asarray
 from face_alignment import FaceMaskDetection
 from tools import model_restore_from_pb
 import tensorflow
-from DBinput import take_a_picture as picture
-from DBinput import update_info as update
+from PIL import Image
 
 #----tensorflow version check
 if tensorflow.__version__.startswith('1.'):
@@ -16,59 +16,67 @@ print("Tensorflow version: ",tf.__version__)
 
 img_format = {'png','jpg','bmp'}
 
-def video_init(camera_source=0,resolution="480",to_write=False,save_dir=None):
+def video_init2(input_dir,to_write=False,save_dir=None):
     #----var
-    writer = None
-    resolution_dict = {"480":[480,640],"720":[720,1280],"1080":[1080,1920]}
+    #writer = None
+    #resolution_dict = {"480":[480,640],"720":[720,1280],"1080":[1080,1920]}
 
     #----camera source connection
-    cap = cv2.VideoCapture(camera_source)
+    #cap = cv2.VideoCapture(camera_source)
+
+    cap = Image.open(input_dir)
+
+    # height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)#default 480
+    # width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)#default 640
+    height = cap.size[1]
+    width = cap.size[0]
 
     #----resolution decision
-    if resolution in resolution_dict.keys():
-        width = resolution_dict[resolution][1]
-        height = resolution_dict[resolution][0]
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-    else:
-        height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)#default 480
-        width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)#default 640
+    # if resolution in resolution_dict.keys():
+    #     width = resolution_dict[resolution][1]
+    #     height = resolution_dict[resolution][0]
+    #     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+    #     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    # else:
+    #     height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)#default 480
+    #     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)#default 640
 
     '''
     ref:https://docs.opencv.org/master/dd/d43/tutorial_py_video_display.html
-    FourCC is a 4-byte code used to specify the video codec.
-    The list of available codes can be found in fourcc.org.
+    FourCC is a 4-byte code used to specify the video codec. 
+    The list of available codes can be found in fourcc.org. 
     It is platform dependent. The following codecs work fine for me.
     In Fedora: DIVX, XVID, MJPG, X264, WMV1, WMV2. (XVID is more preferable. MJPG results in high size video. X264 gives very small size video)
     In Windows: DIVX (More to be tested and added)
     In OSX: MJPG (.mp4), DIVX (.avi), X264 (.mkv).
     FourCC code is passed as `cv.VideoWriter_fourcc('M','J','P','G')or cv.VideoWriter_fourcc(*'MJPG')` for MJPG.
     '''
-    if to_write is True:
-        #fourcc = cv2.VideoWriter_fourcc('x', 'v', 'i', 'd')
-        #fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        save_path = 'demo.avi'
-        if save_dir is not None:
-            save_path = os.path.join(save_dir,save_path)
-        writer = cv2.VideoWriter(save_path, fourcc, 30, (int(width), int(height)))
+    # if to_write is True:
+    #     #fourcc = cv2.VideoWriter_fourcc('x', 'v', 'i', 'd')
+    #     #fourcc = cv2.VideoWriter_fourcc('X', 'V', 'I', 'D')
+    #     fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    #     save_path = 'demo.avi'
+    #     if save_dir is not None:
+    #         save_path = os.path.join(save_dir,save_path)
+    #     #writer = cv2.VideoWriter(save_path, fourcc, 30, (int(width), int(height)))
 
-    return cap,height,width,writer
+    return cap,height,width
 
 
-def stream(frame, BodyTemp, pb_path, node_dict,ref_dir,camera_source=0,resolution="480",to_write=False,save_dir=None):
+def stream2(pb_path, node_dict,ref_dir,input_dir,to_write=False,save_dir=None):
+
     #----var
-    frame_count = 0
-    FPS = "loading"
+    # frame_count = 0
+    # FPS = "loading"
     face_mask_model_path = r'face_mask_detection.pb'
     margin = 40
     id2class = {0: 'Mask', 1: 'NoMask'}
     batch_size = 32
     ## 작게 할수록 높은 정밀도를 요구하지만 잘 안됨
-    threshold = 1.5
+    threshold = 1.2
 
     #----Video streaming initialization
-    cap,height,width,writer = video_init(camera_source=camera_source, resolution=resolution, to_write=to_write, save_dir=save_dir)
+    cap,height,width = video_init2(input_dir, to_write=to_write, save_dir=save_dir)
 
     # ----face detection init
     fmd = FaceMaskDetection(face_mask_model_path, margin, GPU_ratio=None)
@@ -140,19 +148,19 @@ def stream(frame, BodyTemp, pb_path, node_dict,ref_dir,camera_source=0,resolutio
         feed_dict_2 = {tf_ref: embeddings_ref}
 
 
-    #----Get an image
-    run_flag = True
 
-    #for _ in range(50):
-    #while (cap.isOpened()):
-    while run_flag:
+    #----Get an image
+    while(True):
+
         #ret, img = cap.read()#img is the original image with BGR format. It's used to be shown by opencv
         ret = True
-        name = ""
+        img = asarray(cap)
+
         if ret is True:
 
-            #----image processing
-            img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        #----image processing
+            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
             img_rgb = img_rgb.astype(np.float32)
             img_rgb /= 255
 
@@ -163,8 +171,6 @@ def stream(frame, BodyTemp, pb_path, node_dict,ref_dir,camera_source=0,resolutio
             img_fd = cv2.resize(img_rgb, (260,260))
             img_fd = np.expand_dims(img_fd, axis=0)
 
-            # height = frame.size[1]
-            # width = frame.size[0]
             bboxes, re_confidence, re_classes, re_mask_id = fmd.inference(img_fd, height, width)
             if len(bboxes) > 0:
                 for num, bbox in enumerate(bboxes):
@@ -173,12 +179,12 @@ def stream(frame, BodyTemp, pb_path, node_dict,ref_dir,camera_source=0,resolutio
                         color = (0, 255, 0)  # (B,G,R) --> Green(with masks)
                     else:
                         color = (0, 0, 255)  # (B,G,R) --> Red(without masks)
-                    #cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), color, 2)
+                    cv2.rectangle(img_rgb, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), color, 2)
                     # cv2.putText(img, "%s: %.2f" % (id2class[class_id], re_confidence[num]), (bbox[0] + 2, bbox[1] - 2),
                     #             cv2.FONT_HERSHEY_SIMPLEX, 0.8, color)
 
                     # ----face recognition
-                    #name = ""
+                    name = ""
                     if len_ref_path > 0:
                         img_fr = img_rgb[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2], :]  # crop
                         #print(img_fr.shape)
@@ -196,34 +202,30 @@ def stream(frame, BodyTemp, pb_path, node_dict,ref_dir,camera_source=0,resolutio
                         if distance[arg] < threshold:
                             name = paths[arg].split("\\")[-1].split(".")[0]
 
-                        else:
+                        else :
                             name = 'Unknown'
+                    print(id2class[class_id], name)
 
-                    # cv2.putText(frame, "{},{}".format(id2class[class_id], name), (bbox[0] + 2, bbox[1] - 2),
-                    #             cv2.FONT_HERSHEY_SIMPLEX, 0.8, color)
-                    picture(frame)
-                    update(name, BodyTemp)
+                    cv2.putText(img_rgb, "{},{}".format(id2class[class_id], name), (bbox[0] + 2, bbox[1] - 2),
+                                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, color)
 
             #----FPS calculation
-            if frame_count == 0:
-                t_start = time.time()
-            frame_count += 1
-            if frame_count >= 10:
-                FPS = "FPS=%1f" % (10 / (time.time() - t_start))
-                frame_count = 0
+            # if frame_count == 0:
+            #     t_start = time.time()
+            # frame_count += 1
+            # if frame_count >= 10:
+            #     FPS = "FPS=%1f" % (10 / (time.time() - t_start))
+            #     frame_count = 0
 
             # cv2.putText(img, text, coor, font, size, color, line thickness, line type)
-            #cv2.putText(frame, FPS, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
+            # cv2.putText(img, FPS, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 3)
 
             #----image display
-            cv2.imshow("mask recog", frame)
-            cap.release()
-            cv2.destroyAllWindows()
-            return
+            cv2.imshow("mask recog", img_rgb)
 
             #----image writing
-            if writer is not None:
-                writer.write(frame)
+            # if writer is not None:
+            #     writer.write(img)
 
             #----keys handle
             key = cv2.waitKey(1) & 0xFF
@@ -231,7 +233,7 @@ def stream(frame, BodyTemp, pb_path, node_dict,ref_dir,camera_source=0,resolutio
                 break
             elif key == ord('s'):
                 if len(bboxes) > 0:
-                    img_temp = frame[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2], :]
+                    img_temp = img[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2], :]
                     save_path = "img_crop.jpg"
                     save_path = os.path.join(ref_dir,save_path)
                     cv2.imwrite(save_path,img_temp)
@@ -241,16 +243,13 @@ def stream(frame, BodyTemp, pb_path, node_dict,ref_dir,camera_source=0,resolutio
             print("get images failed")
             break
 
-    #----release
-    cap.release()
-    cv2.destroyAllWindows()
-    if writer is not None:
-        writer.release()
 
-    return
+
+
+
 
 if __name__ == "__main__":
-    camera_source = 0 #can be also the path of a clip
+
     ## 모델경로
     pb_path = r".\Face_Recognition3\pb_model.pb"
     node_dict = {'input': 'input:0',
@@ -258,10 +257,11 @@ if __name__ == "__main__":
                  'phase_train': 'phase_train:0',
                  'embeddings': 'embeddings:0',
                  }
-    
+    dir = ".\input"
+    content = os.listdir(dir)
 
     ## 회원 DB 경로
     ref_dir = r".\database"
-    stream(pb_path, node_dict, ref_dir, camera_source=camera_source, resolution="720", to_write=False, save_dir=None)
+    stream2(pb_path, node_dict, ref_dir,dir +'\\'+ content[0],  to_write=False, save_dir=None)
 
 
